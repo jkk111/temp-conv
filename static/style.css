@@ -1,0 +1,85 @@
+html, body {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+}
+#bg {
+  background-color: #F2FBE3;
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+}
+#preview {
+  position: absolute;
+  top: 0;
+  min-height: 0;
+  z-index: 2;
+  width: 100%;
+  height: 0;
+  background-color: #242480;
+  transition: min-height 0.5s;
+  overflow: hidden;
+}
+#preview-wrapper {
+  padding-top: 100px;
+  width: 60%;
+  height: 60%;
+  margin: 0 auto;
+}
+video, img {
+  max-height: 100%;
+  width: 100%;
+}
+#download-wrapper {
+  padding-top: 16px;
+  width: 75%;
+  margin: 0 auto;
+}
+.download-button {
+  width: 33%;
+  padding: 16px;
+  cursor: pointer;
+  box-sizing: border-box;
+  text-align: center;
+  background-color: #ddd;
+  display: inline-block;
+}
+#head {
+  background: #509A50;
+  position: absolute;
+  z-index: 1;
+  top: 0;
+  min-height: 40%;
+  transition: height 0.5s;
+  width: 100%;
+}
+.expanded {
+  min-height: 100%!important;
+  height: unset;
+}
+#wrapper {
+  min-height: 100%;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  overflow: hidden;
+}
+#content {
+  border: thin solid black;
+  width: 75%;
+  background-color: #EEEFEB;
+  z-index: 10;
+  position: relative;
+  margin: 0 auto 0 auto;
+  top: 40px;
+  border-radius: 5px;
+}
+#head-content {
+  min-height: 400px;
+}
+#foot-content {
+  min-height: 600px;
+  background-color: black;
+}

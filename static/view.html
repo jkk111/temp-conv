@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <style>
+    .invisible {
+      display: none;
+    }
+    body, html {
+      margin: 0;
+      background: #999;
+      min-height: 100%;
+    }
+    #wrapper {
+      width: 75%;
+      margin: 0 auto;
+      background-color: #333;
+      min-height: 100%;
+
+    }
+    #video, #image {
+      max-width: 90%;
+      margin: 0 50%;
+      transform: translateX(-50%);
+      padding-top: 24px;
+    }
+  </style>
+  <title></title>
+  <script>
+    var view = "{{view}}";
+    document.addEventListener("DOMContentLoaded", function() {
+      console.log(view);
+      if(view == "\{\{view\}\}") return; // Error, likely client opened html file,
+                                     // will be fixed when migrate to templates
+      console.log(view);
+      var usingVideo = true;
+      var video = document.getElementById("video");
+      if(video.canPlayType("video/webm") != "") {
+        video.src = "/encoded/" + view + ".webm";
+      }
+      else if (video.canPlayType("video/mp4") != "")
+        video.src = "/encoded/" + view + ".mp4";
+      else {
+        var image = document.getElementById("image");
+        image.src = "/encoded/" + view + ".gif";
+        usingVideo = false;
+      }
+      if(usingVideo)
+        video.classList.remove("invisible");
+      else
+        image.classList.remove("invisible");
+    });
+  </script>
+</head>
+<body>
+  <div id="wrapper">
+    <video id="video" class="invisible" controls="controls"></video>
+    <img id="image" class="invisible">
+    <div class="link"><a href="/encoded/{{view}}.webm">WebM</a></div>
+    <div class="link"><a href="/encoded/{{view}}.mp4">MP4</a></div>
+    <div class="link"><a href="/encoded/{{view}}.gif">GIF</a></div>
+  </div>
+</body>
+</html>

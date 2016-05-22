@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html>
+<style>
+  body {
+    word-wrap: break-word;
+    white-space: pre;
+  }
+</style>
+<head>
+  <title></title>
+  <script>
+    var id = "{{id}}";
+
+    function checkStatus() {
+      var xhr = new XMLHttpRequest();
+      var url = "/watch/"+id+".json";
+      console.log(url);
+      xhr.open("GET", url, true);
+      xhr.onload = function() {
+        var res = JSON.parse(this.responseText);
+        console.log(typeof this.responseText)
+        var body = JSON.stringify(res, null, "  ");
+        console.log("stringified");
+        console.log(body, res.status, res.status == "processed");
+        if(res.status == "processed") {
+          console.log("is processed")
+          window.location.href = "/view/" + id
+        } else {
+          document.body.innerText = body;
+        }
+      }
+      xhr.send();
+    }
+    document.addEventListener("DOMContentLoaded", function() {
+      checkStatus();
+      setInterval(checkStatus, 1000); // replace polling with a websocket, this was just quicker for poc
+    })
+    function goToView() {
+      if(window.setImmediate) {
+        setImmediate(function() {
+          window.location.href = "/view/" + id;
+        });
+      } else {
+        setTimeout(function() {
+          window.location.href = "/view/" + id;
+        })
+      }
+    }
+  </script>
+</head>
+<body>
+
+</body>
+</html>

@@ -2,11 +2,58 @@
 <html>
 <head>
   <title></title>
+  <link rel="stylesheet" type="text/css" href="style.css">
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="template.js"></script>
 </head>
 <body>
-  <form method="POST" enctype="multipart/form-data" action="/upload">
-    <input type="file" name="testing"></input>
-    <input type="submit"></input>
-  </form>
+  <div id="wrapper">
+    <div id="bg">
+      <div id="head">
+        <div id="file-sel">
+          <div id="source-input-wrapper">
+            <form id="fileChooserWrapper" enctype="multipart/form-data"><input type="file" id="fileChooser" name="testing" class="file-input"></input></form>
+            <div id="source-bg"></div>
+            <div id="input-button" class="file-input">
+              <h3>Choose File....</h3>
+            </div>
+          </div>
+        </div>
+        <div id="encode-progress" class="hidden">
+          <img src="close-button.png" class="close-button" onclick="toggleProgress()">
+          <pre id="progress-tmp"></pre>
+          <div id="progress-values">
+            <h3>Upload</h3>
+            <progress id="uploadprogress" value="0" max="100"></progress>
+            <h3>Audio</h3>
+            <progress id="audioprogress" value="0" max="100"></progress>
+            <h3>Gif</h3>
+            <progress id="gifprogress" value="0" max="100"></progress>
+            <h3>MP4</h3>
+            <progress id="mp4progress" value="0" max="100"></progress>
+            <h3>WebM</h3>
+            <progress id="webmprogress" value="0" max="100"></progress>
+          </div>
+        </div>
+      </div>
+      <div id="preview">
+        <img src="close-button.png" class="close-button" onclick="togglePreview()">
+        <div id="preview-wrapper">
+          <video id="preview-video" src="test" muted="muted" loop="loop" autoplay="autoplay" controls="controls"></video>
+        </div>
+        <div id="download-wrapper">
+          <div class="download-button" onclick="download('webm')">
+            Download WEBM
+          </div>
+          <div class="download-button" onclick="download('mp4')">
+            Download MP4
+          </div>
+          <div class="download-button" onclick="download('gif')">
+            Download GIF
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>

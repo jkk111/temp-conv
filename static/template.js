@@ -9,7 +9,11 @@ document.addEventListener("DOMContentLoaded", function() {
     if(data.id) {
       currentId = data.id;
       checkExists(currentId, function(exists) {
-        if(exists) registerSocket(data);
+        if(exists) {
+          var uploadProgress = document.getElementById("uploadprogress");
+          seekProgress(uploadprogress, 100);
+          registerSocket(data);
+        }
       });
     }
   }
@@ -145,25 +149,6 @@ function seekProgress(el, value) {
     el.transitioning = false;
     el.stopTransition = undefined;
   }
-  // Erratic behaviour, disabled temporarily
-  // var seekTime = 10;
-  // var curValue = el.value;
-  // var diff = value - el.value;
-  // if(diff == 0) return;
-  // var positive = diff >= 0;
-  // diff /= 10;
-  // if(diff == 0) diff = 1 * (positive ? 1 : -1);
-  // var seekInterval = setInterval(function() {
-  //   var newValue;
-  //   if(positive)
-  //     newValue = Math.floor(Math.min((el.value + diff), value));
-  //   else
-  //     newValue = Math.floor(Math.max((el.value + diff), value));
-  //   if(isFinite(newValue))
-  //     el.value = newValue;
-  //   if(el.value == value)
-  //     clearInterval(seekInterval);
-  // })
 }
 
 function checkExists(key, cb) {
@@ -176,8 +161,15 @@ function checkExists(key, cb) {
   xhr.send();
 }
 
+function resetConversionStatuses() {
+  document.getElementById("webmprogress").value = 0;
+  document.getElementById("gifprogress").value = 0;
+  document.getElementById("audioprogress").value = 0;
+  document.getElementById("mp4progress").value = 0;
+}
+
 function uploadFile(file) {
-  console.log("uploading file", file);
+  resetConversionStatuses();
   var uploadProgress = document.getElementById("uploadprogress");
   toggleProgress();
   var form = new FormData();
@@ -187,7 +179,7 @@ function uploadFile(file) {
   xhr.upload.onprogress = function(e) {
     if (e.lengthComputable) {
       var percentComplete = (e.loaded / e.total) * 100;
-      uploadProgress.value = percentComplete;
+      seekProgress(uploadProgress.value, percentComplete);
     }
   }
   xhr.onload = function() {

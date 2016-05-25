@@ -10,8 +10,6 @@ var ffmpeg = require("fluent-ffmpeg");
 var encoders = require("./encoders.js");
 var https = require("https");
 var fs = require("fs");
-var viewFile = fs.readFileSync("static/view.html", "utf8");
-var watchFile = fs.readFileSync("static/watch.html", "utf8");
 const MAX_THREADS = 4;
 var activeThreads = 0;
 var MAX_AGE = 60 * 60 * 1000;
@@ -81,15 +79,21 @@ app.use(express.static("static/"));
 
 // Accepts upload and sends the user a key to check the file.
 app.post("/upload", upload.single("file"), function(req, res) {
+  if(!req.body.formats) req.body.formats = encoders.FORMATS;
+  for(var i = 0 ; i < req.body.formats.length; i++) {
+    var format = req.body.formats[i];
+    if(encoders.FORMATS.indexOf(format) == -1) req.body.formats.splice(i--, 1);
+  }
   if(req.file && (req.file.mimetype.indexOf("video") != -1 || req.file.mimetype == "image/gif")) {
     var data = {
       filename: req.file.originalname,
       path: req.file.path,
       id: req.file.filename,
-      added: new Date().getTime()
+      added: new Date().getTime(),
+      formats: req.body.formats
     }
     if(activeThreads < MAX_THREADS)
-      encode(data);
+      encode(data, req.body.formats);
     else
       queue.push(data);
     res.send({id: req.file.filename});
@@ -163,23 +167,24 @@ function getPosInQueue(key) {
 }
 
 function encode(data) {
+  var formats = data.formats;
   activeThreads++;
   data.startedEncode = new Date().getTime();
   data.status = "processing";
   processing.push(data);
   var mp4 = false, webm = false, gif = false, audio = false;
   var done = {};
-  for(var i = 0; i < encoders.FORMATS.length; i++) {
-    var format = encoders.FORMATS[i];
+  for(var i = 0; i < formats.length; i++) {
+    var format = formats[i];
     done[format] = false;
   }
-  for(var i = 0; i < encoders.FORMATS.length; i++) {
+  for(var i = 0; i < formats.length; i++) {
     (function(format) {
       encoders[format](data, pushUpdates, function() {
         done[format] = true;
         if(checkAllDone(done)) handleCleanup(data);
       });
-    })(encoders.FORMATS[i]);
+    })(formats[i]);
   }
 }
 
@@ -265,11 +270,11 @@ app.get("/exists/:key", function(req, res) {
 function pruneFile(file) {
   var base = "encoded/" + file.id;
   fs.unlink(base + ".mp4", function(err) {
-    if(err) console.error(err);
+    if(err && err.code != "ENOENT") console.error(err);
     fs.unlink(base + ".webm", function(err) {
-      if(err) console.error(err);
+      if(err && err.code != "ENOENT") console.error(err);
       fs.unlink(base + ".gif", function(err) {
-        if(err) console.error(err);
+        if(err && err.code != "ENOENT") console.error(err);
       })
     });
   })

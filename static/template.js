@@ -32,18 +32,28 @@ function parseWindowHash(hash) {
   return ret;
 }
 
-function togglePreview() {
+function togglePreview(force) {
+  force = force || false;
   var preview = document.getElementById("preview");
-  var wrapper = document.getElementById("head");
-  var video = document.getElementById("preview-video");
-  if(preview.classList.contains("expanded")) {
-    preview.classList.remove("expanded");
-    window.location.hash = "";
-    video.pause();
+  if(preview.classList.contains("expanded") && !force) {
+    hidePreview();
   }
   else {
-    preview.classList.add("expanded");
+    showPreview();
   }
+}
+
+function hidePreview() {
+  var preview = document.getElementById("preview");
+  var video = document.getElementById("preview-video");
+  preview.classList.remove("expanded");
+  window.location.hash = "";
+  video.pause();
+}
+
+function showPreview() {
+  var preview = document.getElementById("preview");
+  preview.classList.add("expanded");
   setTimeout(hideProgress, 250);
 }
 
@@ -66,6 +76,7 @@ function handleFileDrop(e) {
   if(e.stopPropagation) e.stopPropagation();
   var file = e.dataTransfer.files[0];
   console.log(e.type);
+  hidePreview();
   uploadFile(file);
   return false;
 }
@@ -79,8 +90,9 @@ function showProgress() {
   select.classList.add("hidden");
 }
 
-function toggleProgress() {
-  if(wrapper.classList.contains("expanded")) {
+function toggleProgress(force) {
+  force = force || false;
+  if(wrapper.classList.contains("expanded") && !force) {
     hideProgress();
   } else {
     showProgress();
@@ -119,7 +131,7 @@ function registerSocket(res) {
         player.src = `encoded/${currentId}.webm`;
       else
         player.src = `encoded/${currentId}.mp4`;
-      togglePreview();
+      togglePreview(true);
     }
   });
 }

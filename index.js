@@ -12,7 +12,23 @@ var https = require("https");
 var fs = require("fs");
 const MAX_THREADS = 4;
 var activeThreads = 0;
-var MAX_AGE = 60 * 60 * 1000;
+var HOUR = 60 * 60 * 1000;
+var DAY = 24 * HOUR;
+var KB = 1024 * 1024;
+var MB = KB * 1024;
+var GB = MB * 1024;
+var expiration = {
+  anonymous: HOUR,
+  registered: DAY,
+  admin: DAY * 365 * 10;
+}
+
+var maxSize = {
+  anonymous: 5 * MB,
+  registered: 25 * MB,
+  admin: 5 * GB
+}
+
 var server;
 
 try {
@@ -27,10 +43,16 @@ try {
   server = http.createServer(app).listen(80);
 }
 
+var tokens = {}, credentials = {};
+
 var io = require("socket.io")(server);
 try {
   fs.mkdirSync("encoded");
 } catch(e) {
+
+}
+
+function checkSize(req, res, next) {
 
 }
 

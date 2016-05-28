@@ -17,6 +17,12 @@ function encodeMP4(file, pushUpdates, cb) {
   pushUpdates(file.id, file);
   ffmpeg(path).outputOptions("-c:v", "libx264", "-preset", "ultrafast")
   .save(`encoded/${file.id}.mp4`)
+  .on("error", function(err) {
+    file.nomp4 = true;
+    delete file.mp4start;
+    pushUpdates(file.id, file);
+    cb();
+  })
   .on("progress", function(progress) {
     file.mp4progress = progress.percent;
     pushUpdates(file.id, file);
@@ -39,6 +45,12 @@ function encodeWebM(file, pushUpdates, cb) {
                              "-b:v", "1000K",
                              "-cpu-used", "5")
   .save(`encoded/${file.id}.webm`)
+  .on("error", function(err) {
+    file.nowebm = true;
+    delete file.webmstart;
+    pushUpdates(file.id, file);
+    cb();
+  })
   .on("progress", function(progress) {
     file.webmprogress = progress.percent;
     pushUpdates(file.id, file);
@@ -59,6 +71,12 @@ function encodeGif(file, pushUpdates, cb) {
   ffmpeg(path)
   .outputOptions("-pix_fmt", "rgb24")
   .save(`encoded/${file.id}.gif`)
+  .on("error", function(err) {
+    file.nogif = true;
+    delete file.gifstart;
+    pushUpdates(file.id, file);
+    cb();
+  })
   .on("progress", function(progress) {
     file.gifprogress = progress.percent;
     pushUpdates(file.id, file);
@@ -73,25 +91,24 @@ function encodeGif(file, pushUpdates, cb) {
 
 function encodeMP3(file, pushUpdates, cb) {
   var path = file.path;
-  file.audiostart = new Date().getTime();
-  file.audioprogress = 0;
+  file.mp3start = new Date().getTime();
+  file.mp3progress = 0;
   pushUpdates(file.id, file);
   ffmpeg(path).outputOptions("-ab", "160k", "-ac", "2", "-ar", "44100", "-vn")
   .save(`encoded/${file.id}.mp3`)
   .on("error", function(err) {
-    // In testing only issue encountered is no audio stream.
-    file.noaudio = true;
-    delete file.audiostart;
+    file.nomp3 = true;
+    delete file.mp3start;
     pushUpdates(file.id, file);
     cb();
   })
   .on("progress", function(progress) {
-    file.audioprogress = progress.percent;
+    file.mp3progress = progress.percent;
     pushUpdates(file.id, file);
   })
   .on("end", function() {
-    file.audioprogress = "complete";
-    file.audioend = new Date().getTime();
+    file.mp3progress = "complete";
+    file.mp3end = new Date().getTime();
     pushUpdates(file.id, file);
     cb();
   })

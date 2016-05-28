@@ -121,7 +121,7 @@ function registerSocket(res) {
   });
   socket.on("update", function(data) {
     tmp.innerHTML = JSON.stringify(data, null, "  ");
-    seekProgress(audio, data.audioprogress);
+    seekProgress(audio, data.mp3progress);
     seekProgress(gif, data.gifprogress);
     seekProgress(mp4, data.mp4progress);
     seekProgress(webm, data.webmprogress);

@@ -7,6 +7,7 @@ var multer = require("multer");
 var storage = multer.diskStorage({});
 var upload = multer({storage: storage});
 var ffmpeg = require("fluent-ffmpeg");
+var ffprobe = ffmpeg.ffprobe;
 var encoders = require("./encoders.js");
 var https = require("https");
 var fs = require("fs");
@@ -20,13 +21,20 @@ var GB = MB * 1024;
 var expiration = {
   anonymous: HOUR,
   registered: DAY,
-  admin: DAY * 365 * 10;
+  admin: DAY * 365 * 10
 }
 
 var maxSize = {
   anonymous: 5 * MB,
   registered: 25 * MB,
   admin: 5 * GB
+}
+
+var accounts;
+try {
+  fs.readFileSync("accounts.json", "utf8")
+} catch(e) {
+  accounts = {};
 }
 
 var server;
@@ -114,6 +122,9 @@ app.post("/upload", upload.single("file"), function(req, res) {
       added: new Date().getTime(),
       formats: req.body.formats
     }
+    ffprobe(data.path, function(err, metadata) {
+      console.log(metadata);
+    })
     if(activeThreads < MAX_THREADS)
       encode(data, req.body.formats);
     else
@@ -142,7 +153,34 @@ app.get("/watch/:key.json", function(req, res) {
   } else {
     res.json({status: "queued", position: getPosInQueue(key)});
   }
-})
+});
+
+app.post("/register", function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  if(!username || !password) return res.status(400).send("EPARAMS");
+  if(accounts[username]) return res.status(400).send("EEXISTS");
+  accounts[username] = {
+    password: password,
+    type: "registered"
+  }
+  writeAccounts();
+  res.send("REGISTERED");
+});
+
+app.post("/login", function(req, res) {
+  var username = req.body.username;
+  var password = req.body.password;
+  if(!username || !password) return res.status(400).send("EPARAMS");
+  if(!accounts[username] || accounts[username] && accounts[username].password != password)
+    return res.status(400).send("EINVALID");
+  else if(accounts[username] && accounts[username].password == password)
+    res.send("SUCCESS"); // Replace with method to set cookie.
+});
+
+function writeAccounts() {
+  fs.writeFileSync("accounts.json", JSON.stringify(accounts, null, "  "), "utf8");
+}
 
 function calculateStatus(key, cb) {
   var queued = checkIfInArr(queue, key);
@@ -272,7 +310,7 @@ function checkIfInArr(arr, id) {
 
 function pruneExpired() {
   var now = new Date().getTime();
-  var expiry = now - MAX_AGE;
+  var expiry = now - expiration["anonymous"];
   for(var i = 0 ; i < processed.length; i++) {
     var file = processed[i];
     if(file.encodeComplete <= expiry) {

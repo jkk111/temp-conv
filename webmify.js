@@ -50,7 +50,7 @@ function expandDir(path) {
       var tmp = expandDir(item);
       for(var j = 0; j < tmp.length; j++) {
         tmp[j] = resolve(item, tmp[j]);
-        if(items.indexOf(tmp[j]) == -1) items.push(tmp[j])
+        if(items.indexOf(tmp[j]) == -1) items.push(tmp[j]);
       }
     }
   }

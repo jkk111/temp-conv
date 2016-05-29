@@ -49,3 +49,6 @@ node_modules
 tmp
 encoded
 uploads.json
+tokens.json
+admin.json
+accounts.json

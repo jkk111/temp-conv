@@ -1,5 +1,6 @@
 var currentId;
 document.addEventListener("DOMContentLoaded", function() {
+  handleForms();
   document.body.addEventListener("dragover", cancel);
   document.body.addEventListener("dragenter", cancel);
   document.body.addEventListener("drop", handleFileDrop);
@@ -18,6 +19,40 @@ document.addEventListener("DOMContentLoaded", function() {
     }
   }
 });
+
+function handleForms() {
+  var forms = document.querySelectorAll(".login-register");
+  for(var i = 0; i < forms.length; i++) {
+    handleForm(forms[i]);
+  }
+}
+
+function handleForm(form) {
+  var method = form.method;
+  var action = form.action;
+  var formData = new FormData();
+  formData.append("username", form.username);
+  formData.append("password", form.password);
+  form.addEventListener("submit", function(e) {
+    e.preventDefault();
+    var xhr = new XMLHttpRequest();
+    xhr.open(method, action, true);
+    xhr.setRequestHeader("Content-type", "application/x-www-form-urlencoded");
+    console.log(uriencode({username: form.username, password: form.password}));
+    xhr.send(uriencode({username: form.username.value, password: form.password.value}));
+  });
+}
+
+function uriencode(obj) {
+  var str = "";
+  var first = true;
+  for(key in obj) {
+    if(!first) str += "&";
+    str += `${key}=${encodeURIComponent(obj[key])}`;
+    first = false;
+  }
+  return str;
+}
 
 function parseWindowHash(hash) {
   hash = hash || window.location.hash;

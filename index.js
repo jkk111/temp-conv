@@ -2,8 +2,13 @@ var express = require("express");
 var queue = [];
 var processing = [];
 var processed = [];
+var crypto = require("crypto");
 var app = express();
 var multer = require("multer");
+var bodyParser = require("body-parser");
+app.use(bodyParser.urlencoded({extended: true}));
+var cookieParser = require("cookie-parser");
+app.use(cookieParser());
 var storage = multer.diskStorage({});
 var upload = multer({storage: storage});
 var ffmpeg = require("fluent-ffmpeg");
@@ -15,9 +20,10 @@ const MAX_THREADS = 4;
 var activeThreads = 0;
 var HOUR = 60 * 60 * 1000;
 var DAY = 24 * HOUR;
-var KB = 1024 * 1024;
+var KB = 1024;
 var MB = KB * 1024;
 var GB = MB * 1024;
+
 var expiration = {
   anonymous: HOUR,
   registered: DAY,
@@ -31,13 +37,46 @@ var maxSize = {
 }
 
 var accounts;
+var tokens;
 try {
-  fs.readFileSync("accounts.json", "utf8")
+  accounts = JSON.parse(fs.readFileSync("accounts.json", "utf8"));
 } catch(e) {
   accounts = {};
 }
 
+try {
+  tokens = JSON.parse(fs.readFileSync("tokens.json", "utf8"));
+} catch(e) {
+  tokens = {};
+}
+
+try {
+  var admin = JSON.parse(fs.readFileSync("admin.json", "utf8"));
+  var tmp = {};
+  tmp[admin.username] = {};
+  tmp[admin.username].password = admin.password;
+  tmp[admin.username].type = "admin";
+  combine(accounts, tmp, true);
+  writeAccounts();
+} catch(e) {
+  console.error("NO ADMIN FOUND... CLOSING", e);
+  var template = {
+    username: "admin",
+    password: "admin"
+  }
+  fs.writeFileSync("admin.json", JSON.stringify(template, null, "  "), "utf8");
+  process.exit();
+}
+
 var server;
+
+function combine(obj1, obj2, overwrite) {
+  for(var el in obj2) {
+    if(!obj1[el] || overwrite) {
+      obj1[el] = obj2[el];
+    }
+  }
+}
 
 try {
   var opts = {
@@ -57,10 +96,6 @@ var io = require("socket.io")(server);
 try {
   fs.mkdirSync("encoded");
 } catch(e) {
-
-}
-
-function checkSize(req, res, next) {
 
 }
 
@@ -103,12 +138,29 @@ function checkFileNotRemnant(file) {
   }
 }
 
-
-
 app.use(express.static("static/"));
 
+app.use("/upload", upload.single("file"), function(req, res, next) {
+  req.cookies = req.cookies || [];
+  var token = req.cookies.token;
+  if(token && tokens[token]) {
+    var user = tokens[token].username;
+    req.encodeType = accounts[user].type;
+  }
+  req.encodeType = req.encodeType || "anonymous";
+  next();
+})
+
+app.post("/upload", function(req, res, next) {
+  var max = maxSize[req.encodeType || "anonymous"];
+  if(req.file.size > max) {
+    return res.status(400).send({ error: "ESIZE" });
+  }
+  next();
+});
+
 // Accepts upload and sends the user a key to check the file.
-app.post("/upload", upload.single("file"), function(req, res) {
+app.post("/upload", function(req, res) {
   if(!req.body.formats) req.body.formats = encoders.FORMATS;
   for(var i = 0 ; i < req.body.formats.length; i++) {
     var format = req.body.formats[i];
@@ -123,8 +175,8 @@ app.post("/upload", upload.single("file"), function(req, res) {
       formats: req.body.formats
     }
     ffprobe(data.path, function(err, metadata) {
-      console.log(metadata);
-    })
+      // console.log(metadata);
+    });
     if(activeThreads < MAX_THREADS)
       encode(data, req.body.formats);
     else
@@ -159,27 +211,45 @@ app.post("/register", function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
   if(!username || !password) return res.status(400).send("EPARAMS");
-  if(accounts[username]) return res.status(400).send("EEXISTS");
+  if(accounts[username]) return res.status(400).send({ error: "EEXISTS" });
   accounts[username] = {
     password: password,
     type: "registered"
   }
   writeAccounts();
-  res.send("REGISTERED");
+  doLogin(username, password, function(err, result) {
+    if(err) return res.status(400).send({ error: "EINVALID" })
+    res.cookie("token", result.token, { maxAge: DAY * 7 }).send(result);
+  });
 });
 
 app.post("/login", function(req, res) {
   var username = req.body.username;
   var password = req.body.password;
-  if(!username || !password) return res.status(400).send("EPARAMS");
-  if(!accounts[username] || accounts[username] && accounts[username].password != password)
-    return res.status(400).send("EINVALID");
-  else if(accounts[username] && accounts[username].password == password)
-    res.send("SUCCESS"); // Replace with method to set cookie.
+  if(!username || !password) return res.status(400).send({ error: "EPARAMS" });
+  doLogin(username, password, function(err, result) {
+    if(err) return res.status(400).send(err);
+    res.cookie("token", result.token, { maxAge: DAY * 7 }).send(result);
+  });
 });
 
+function doLogin(username, password, cb) {
+  if(!accounts[username] || (accounts[username] && accounts[username].password != password))
+    return cb({ error: "EINVALID" });
+  else if(accounts[username] && accounts[username].password == password) {
+    var token = crypto.randomBytes(16).toString("base64");
+    tokens[token] = { username: username, expiry: (new Date()).getTime() + (DAY * 7)};
+    writeTokens();
+    cb(null, { token: token });
+  }
+}
+
 function writeAccounts() {
-  fs.writeFileSync("accounts.json", JSON.stringify(accounts, null, "  "), "utf8");
+  fs.writeFileSync("accounts.json", JSON.stringify(accounts, null, "  "));
+}
+
+function writeTokens() {
+  fs.writeFileSync("tokens.json", JSON.stringify(tokens, null, "  "));
 }
 
 function calculateStatus(key, cb) {

@@ -18,6 +18,24 @@
               <h3>Choose File....</h3>
             </div>
           </div>
+          <div id="login-register">
+            <div id="login">
+              <form action="/login" class="login-register" method="POST">
+                <label>Login:</label>
+                <input type="text" placeholder="username" name="username"></input>
+                <input type="password" placeholder="password" name="password"></input>
+                <input type="submit"></input>
+              </form>
+            </div>
+            <div id="register">
+              <form action="/register" class="login-register" method="POST">
+                <label>Register:</label>
+                <input type="text" placeholder="username" name="username"></input>
+                <input type="password" placeholder="password" name="password"></input>
+                <input type="submit"></input>
+              </form>
+            </div>
+          </div>
         </div>
         <div id="encode-progress" class="hidden">
           <img src="close-button.png" class="close-button" onclick="toggleProgress()">

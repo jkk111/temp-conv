@@ -155,6 +155,9 @@ function registerSocket(res) {
     socket.emit("register", res.id);
   });
   socket.on("update", function(data) {
+    if(data.error && data.error == 404) {
+      toggleProgress();
+    }
     tmp.innerHTML = JSON.stringify(data, null, "  ");
     seekProgress(audio, data.mp3progress);
     seekProgress(gif, data.gifprogress);
@@ -234,6 +237,12 @@ function uploadFile(file) {
     var res = JSON.parse(this.responseText);
     console.log("Listening to:", res);
     registerSocket(res);
+  }
+  xhr.onerror = function() {
+    var body = this.responseText;
+    body = JSON.parse(body);
+    if(body.error == 404)
+      toggleProgress();
   }
   xhr.send(form);
 }

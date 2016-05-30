@@ -172,7 +172,8 @@ app.post("/upload", function(req, res) {
       path: req.file.path,
       id: req.file.filename,
       added: new Date().getTime(),
-      formats: req.body.formats
+      formats: req.body.formats,
+      uploadedAs: req.encodeType
     }
     ffprobe(data.path, function(err, metadata) {
       // console.log(metadata);

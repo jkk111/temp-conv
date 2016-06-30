@@ -173,7 +173,8 @@ app.post("/upload", function(req, res) {
       id: req.file.filename,
       added: new Date().getTime(),
       formats: req.body.formats,
-      uploadedAs: req.encodeType
+      uploadedAs: req.encodeType,
+      callbackUrl: req.body.callback
     }
     ffprobe(data.path, function(err, metadata) {
       // console.log(metadata);
@@ -324,6 +325,36 @@ function checkAllDone(done) {
     if(!done[key]) return false;
   }
   return true;
+}
+
+function queueForRetry(file) {
+  if(file.retries < 5) {
+    file.retries = file.retries || 0;
+    file.retries++;
+    setTimeout(function() {
+      callback(file);
+    }, 5 * 60 * 1000);
+  }
+}
+
+function callback(file) {
+  var url = file.callbackUrl;
+  var cbregex = /(http[s]?:\/\/)([.\.]*)/gi;
+  if(cbregex.test(url)) {
+    var fd = {
+      id: file.id
+    }
+    for(format in data.formats) {
+      fd[key] = file.id + "." + key;
+    }
+    var opt = {
+      url: url,
+      formData: fd
+    }
+    request(opt, function(err, data, body) {
+      if(err) queueForRetry(file);
+    });
+  }
 }
 
 function handleCleanup(file) {
